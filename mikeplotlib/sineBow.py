@@ -137,7 +137,7 @@ class SineBow:
             return 0.
         return val*val
 
-    def getColor(self, pointVal):
+    def getColor(self, pointVal, hexFormat=False):
         """Return an RGB color tuple for the given point value.
 
         If nothing makes sense. return black
@@ -169,8 +169,10 @@ class SineBow:
             b = int(round(self._getValue(scaled_val - self.bOffset) * 255))
 
         ratio = 255./float(r + b + g)
-
-        return [int(float(val) * ratio) for val in (r, g, b)]
+        rgb = tuple([int(float(val) * ratio) for val in (r, g, b)])
+        if hexFormat:
+            return "#%s" % format(rgb[0]<<16 | rgb[1]<<8 | rgb[2], '06x')
+        return rgb
 
 ###############################################################################
 ###############################################################################

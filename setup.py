@@ -2,7 +2,7 @@ from distutils.core import setup
 
 setup(
     name='mikePlotLib',
-    version='1.0.0',
+    version='1.0.1',
     author='Michael Imelfort',
     author_email='mike@mikeimelfort.com',
     packages=['mikeplotlib'],
