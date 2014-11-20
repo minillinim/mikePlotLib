@@ -15,13 +15,16 @@ Should be as simple as
 
 ### create an rgb sinebow that spans a portion of the color wheel between 0 and 100 with 1000 steps
     from mikeplotlib.sineBow import SineBow
-    SB = SineBow(100, 1000, mapType='rgb')
+    SB = SineBow(100, mapType='rgb')
 
 ### get the rgb tuple for value=57.1
-    SB.getColor(57.1)                       # (0, 245, 9)
+    SB.makeColor(57.1)                       # (0, 245, 9)
 
 ### get it as a #hex string
-    SB.getColor(57.1, hexFormat=True)       # #00f509
+    SB.makeColor(57.1, hexFormat=True)       # #00f509
+
+### get 25 colours evenly spaced over the region
+    cols = SB.getNColors(25)
 
 ## StackedbarGraph - code for making purdy stacked bar graphs
 
