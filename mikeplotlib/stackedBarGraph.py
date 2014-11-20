@@ -74,8 +74,8 @@ class StackedBarGrapher:
          scale == True --> scale bars to same height
          widths - [float], widths for each bar
          heights - [float], heights for each bar
-         ylabel - string, label for x axis
-         xlabel - string, label for y axis
+         ylabel - string, label for y axis
+         xlabel - string, label for x axis
          gap - float, gap between bars
          endGaps == True -> allow gaps at end of bar chart (only if gaps != 0.)
 

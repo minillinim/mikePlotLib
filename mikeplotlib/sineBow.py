@@ -25,7 +25,7 @@ __author__ = "Michael Imelfort"
 __copyright__ = "Copyright 2014"
 __credits__ = ["Michael Imelfort"]
 __license__ = "GPL3"
-__version__ = "1.0.0"
+__version__ = "2.0.0"
 __maintainer__ = "Michael Imelfort"
 __email__ = "mike@mikeimelfort.com"
 __status__ = "Released"
@@ -39,12 +39,13 @@ import math
 ###############################################################################
 ###############################################################################
 
-class SineBow:
+schemes = ['rb', 'br', 'gr', 'rg', 'bg', 'gb', 'rgb', 'bgr', 'sine']
+class SineBow(object):
     def __init__(self,
                  upperBound,
-                 resolution,
                  lowerBound=0.,
-                 mapType="rb"):
+                 mapType="rb",
+                 mode="bright"):
         '''
         Default constructor.
 
@@ -52,127 +53,134 @@ class SineBow:
 
         Inputs:
          upperBound - float, the maximum value to map
-         resolution - int, the number of steps between lower and upper bounds
          lowerBound - float, the minimum value to map
-         mapType - string, type of map to make [rb, br, bgr, rgb]
+         mapType - string, type of map to make
+                   ['rb', 'br', 'gr', 'rg', 'bg', 'gb', 'rgb', 'bgr', 'sine']
 
         Outputs:
          None
         '''
-        # constants
-        self.RBLowerOffset = 0.5
-        self.RBDivisor = (2.0/3.0)
-        self.RB_ERROR_COLOUR = [0,0,0]
+        self.schemes = {'rb' : (0., math.pi/2.),
+                        'br' : (math.pi/2., 0.),
+                        'gr' : (math.pi, 3.*math.pi/2.),
+                        'rg' : (3.*math.pi/2., math.pi),
+                        'bg' : (math.pi/2, math.pi),
+                        'gb' : (math.pi, math.pi/2),
+                        'rgb' : (3.*math.pi/2., math.pi/2.),
+                        'bgr' : (math.pi/2., 3.*math.pi/2.),
+                        'sine' : (0., 3.*math.pi/2.)}
 
-        # set the limits
         self.lowerBound = lowerBound
         self.upperBound = upperBound
-        self.resolution = resolution
-        self.tickSize = (self.upperBound-self.lowerBound) / (self.resolution-1)
+        self.boundSpan = float(self.upperBound - self.lowerBound)
 
-        # set the type, red-blue by default
-        self.type = mapType
-        self.rOffset = 0.0
-        self.gOffset = self.RBDivisor * math.pi * 2.0
-        self.bOffset = self.RBDivisor * math.pi
+        (self.thetaMin, self.thetaMax) = self.schemes[mapType]
+        self.thetaSpan = self.thetaMax - self.thetaMin
 
-        self.ignoreRed = False
-        self.ignoreGreen = True
-        self.ignoreBlue = False
+        if mode == "bright":
+            self.maker = self.makeBrightColor
+        else:
+            self.maker = self.makeSoftColor
 
-        self.lowerScale = 0.0
-        self.upperScale = self.RBDivisor * math.pi
+    def _findTheta(self, value):
+        '''find the angle corresponding to the given value
 
-        if(self.type == "rgb"): # red-blue-green
-            self.rOffset = 0.0
-            self.gOffset = self.RBDivisor * math.pi
-            self.bOffset = self.RBDivisor * math.pi * 2.0
-
-            self.ignoreRed = False
-            self.ignoreGreen = False
-            self.ignoreBlue = False
-
-            self.lowerScale = 0.0
-            self.upperScale = (self.RBDivisor * math.pi * 2.0)
-
-        elif(self.type == "bgr"): # green-blue-red
-            self.rOffset = self.RBDivisor * math.pi * 2.0
-            self.gOffset = self.RBDivisor * math.pi
-            self.bOffset = 0.0
-
-            self.ignoreRed = False
-            self.ignoreGreen = False
-            self.ignoreBlue = False
-
-            self.lowerScale = 0.0
-            self.upperScale = (self.RBDivisor * math.pi * 2.0)
-
-        elif(self.type == "br"): # blue-red
-            self.rOffset = self.RBDivisor * math.pi
-            self.gOffset = self.RBDivisor * math.pi * 2.0
-            self.bOffset = 0.0
-
-            self.ignoreRed = False
-            self.ignoreGreen = True
-            self.ignoreBlue = False
-
-            self.lowerScale = 0.0
-            self.upperScale = (self.RBDivisor * math.pi)
-
-        self.scaleMultiplier = (self.upperScale - self.lowerScale) / \
-                                (self.upperBound - self.lowerBound)
-
-    def _getValue(self,
-                  pointVal):
-        '''Get a raw value, not a color
-
-        Inputs:
-         pointVal - float, the value to convert to a RBG-ish value
+        Input:
+         value - float, the value to produce a color for
 
         Outputs:
-         None
+         an angle
         '''
-        val = (math.cos(pointVal) + self.RBLowerOffset) * self.RBDivisor
-        if val <= 0:
-            return 0.
-        return val*val
+        return ((value - self.lowerBound)/self.boundSpan * self.thetaSpan) +\
+                    self.thetaMin
 
-    def getColor(self, pointVal, hexFormat=False):
-        """Return an RGB color tuple for the given point value.
+    def getNColors(self, n, hexFormat=False):
+        '''get N evenly spaced colors
 
-        If nothing makes sense. return black
+        Input:
+         n - int, the number of colors to make
+         hexFormat == True -> return rgb hex code
+
+        Outputs:
+         a list of rgb values or hex codes
+        '''
+        step_size = self.boundSpan / (n-1.)
+        values = [(i * step_size) for i in range(n)]
+        return [self.makeColor(i, hexFormat=hexFormat) for i in values]
+
+    def makeColor(self, value, hexFormat=False):
+        '''return a bright color
 
         Inputs:
-         pointVal - float, the point value to convert to a colour
+         value - float, the value to produce a color for
+         hexFormat == True -> return rgb hex code
 
-        Output:
-         An RGB colour tuple
-        """
-        if(pointVal > self.upperBound or pointVal < self.lowerBound):
-            return self.RB_ERROR_COLOUR
-
-        # normalise the value to suit the ticks
-        normalised_val = round(pointVal/self.tickSize) * self.tickSize
-
-        # map the normalised value onto the horizontal scale
-        scaled_val = ((normalised_val - self.lowerBound) * \
-                          self.scaleMultiplier) + self.lowerScale
-        r = 0
-        g = 0
-        b = 0
-
-        if(not self.ignoreRed):
-            r = int(round(self._getValue(scaled_val - self.rOffset) * 255))
-        if(not self.ignoreGreen):
-            g = int(round(self._getValue(scaled_val - self.gOffset) * 255))
-        if(not self.ignoreBlue):
-            b = int(round(self._getValue(scaled_val - self.bOffset) * 255))
-
-        ratio = 255./float(r + b + g)
-        rgb = tuple([int(float(val) * ratio) for val in (r, g, b)])
+        Outputs:
+         an RGB tuple or a hex code
+        '''
+        (r,g,b) = self.maker(value)
         if hexFormat:
-            return "#%s" % format(rgb[0]<<16 | rgb[1]<<8 | rgb[2], '06x')
-        return rgb
+            return "#%s" % (format(r<<16 | g<<8 | b, '06x'))
+        else:
+            return (r,g,b)
+
+    def makeBrightColor(self, value):
+        '''return a bright color
+
+        Inputs:
+         value - float, the value to produce a color for
+
+        Outputs:
+         an RGB tuple or a hex code
+        '''
+        theta = self._findTheta(value)
+        if theta > math.pi:
+            rr = int(255.*math.cos(theta+math.pi/2.))
+        elif theta < math.pi/2:
+            rr = int(255.*math.cos(theta))
+        else:
+            rr = 0
+
+        if theta > math.pi/2. and theta < 3.*math.pi/2.:
+            gg = int(-1*255.*math.cos(theta))
+        else:
+            gg = 0
+
+        if theta < math.pi:
+            bb = int(255.*math.sin(theta))
+        else:
+            bb = 0
+
+        return (rr, gg, bb)
+
+    def makeSoftColor(self, value):
+        '''return a soft color
+
+        Inputs:
+         value - float, the value to produce a color for
+
+        Outputs:
+         an RGB tuple or a hex code
+        '''
+        theta = self._findTheta(value)
+        if theta > math.pi:
+            rr = int(255.*math.pow(math.cos(theta+math.pi/2.),2))
+        elif theta < math.pi/2:
+            rr = int(255.*math.pow(math.cos(theta),2))
+        else:
+            rr = 0
+
+        if theta > math.pi/2. and theta < 3.*math.pi/2.:
+            gg = int(255.*math.pow(math.cos(theta),2))
+        else:
+            gg = 0
+
+        if theta < math.pi:
+            bb = int(255.*math.pow(math.sin(theta),2))
+        else:
+            bb = 0
+
+        return (rr, gg, bb)
 
 ###############################################################################
 ###############################################################################
