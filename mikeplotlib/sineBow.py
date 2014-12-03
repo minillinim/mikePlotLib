@@ -39,8 +39,10 @@ import math
 ###############################################################################
 ###############################################################################
 
-schemes = ['rb', 'br', 'gr', 'rg', 'bg', 'gb', 'rgb', 'bgr', 'sine']
 class SineBow(object):
+
+    availableSchemes = ['rb', 'br', 'gr', 'rg', 'bg', 'gb', 'rgb', 'bgr', 'sine']
+
     def __init__(self,
                  upperBound,
                  lowerBound=0.,

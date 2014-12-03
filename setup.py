@@ -1,4 +1,5 @@
 from distutils.core import setup
+from os.path import join
 
 setup(
     name='mikePlotLib',
@@ -11,6 +12,7 @@ setup(
     license='GPLv3',
     description='mikePlotLib',
     long_description=open('README.md').read(),
+    package_data={'mikeplotlib': ['Menlo-Regular.ttf']},
     install_requires=[],
 )
 
